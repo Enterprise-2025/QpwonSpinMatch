@@ -214,5 +214,10 @@ body.call-mode .progress,
 body.call-mode .export-controls,
 body.call-mode .smartmatch,
 body.call-mode #scoreChart {
-  display:none;
+  display: none;
+}
+
+/* Hidden attribute override for modal */
+.modal[hidden] {
+  display: none !important;
 }
