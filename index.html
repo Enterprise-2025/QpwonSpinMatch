@@ -20,31 +20,26 @@
 
 <body class="app">
   <!-- Onboarding Modal -->
-  <div id="onboardingModal" class="modal">
+  <div id="onboardingModal" class="modal" hidden>
     <div class="modal__content">
-      <!-- Step 1 -->
       <div class="onboarding-step" data-step="1">
         <h2>Benvenuto in QPWONSpinMatch</h2>
         <p>Questo strumento ti guiderà passo passo attraverso la discovery method.</p>
       </div>
-      <!-- Step 2 -->
       <div class="onboarding-step" data-step="2" hidden>
         <h2>Raccogli il Contesto</h2>
         <p>Inserisci informazioni su ambulatori, medici e obiettivi della struttura.</p>
       </div>
-      <!-- Step 3 -->
       <div class="onboarding-step" data-step="3" hidden>
         <h2>Completa le domande SPIN</h2>
-        <p>Rispondi in modo esaustivo alle domande di Situazione, Problema, Implicazione e Need/Benefit.</p>
+        <p>Rispondi alle domande di Situazione, Problema, Implicazione e Need/Benefit.</p>
       </div>
-      <!-- Step 4 -->
       <div class="onboarding-step" data-step="4" hidden>
         <h2>Scopri il tuo SmartMatch</h2>
         <p>Al termine vedrai il profilo consigliato, benefici attesi e prossime azioni.</p>
       </div>
-      <!-- Footer con navigazione step -->
       <div class="modal-footer">
-        <button id="prevStepBtn" class="btn btn--tertiary">Indietro</button>
+        <button id="prevStepBtn" class="btn btn--tertiary" hidden>Indietro</button>
         <button id="nextStepBtn" class="btn btn--primary">Avanti</button>
       </div>
     </div>
@@ -58,11 +53,12 @@
 
   <!-- Header -->
   <header class="header">
-    <div class="header__title">QPWONSpinMatch</div>
+    <button id="menuToggle" class="btn btn--icon" aria-label="Apri menu">☰</button>
+    <h1 class="header__title">QPWONSpinMatch</h1>
   </header>
 
-  <!-- Sidebar -->
-  <aside id="sidebar" class="sidebar">
+  <!-- Sidebar Navigation -->
+  <aside id="sidebar" class="sidebar" role="navigation">
     <nav>
       <ul>
         <li><a href="#contesto">Contesto Strategico</a></li>
@@ -76,10 +72,10 @@
     </nav>
   </aside>
 
-  <!-- Main -->
+  <!-- Main Content -->
   <main class="main">
     <!-- Progress Bar -->
-    <section class="section progress-section">
+    <section id="progress" class="section progress-section">
       <h2>Progresso SPIN</h2>
       <div class="progress" aria-label="Progresso SPIN">
         <div class="progress__track">
@@ -99,25 +95,21 @@
     <section id="spin" class="section">
       <h2>Domande SPIN</h2>
       <div class="question-list">
-        <!-- Situazione -->
         <div class="question-card">
           <h3>Situazione</h3>
           <label for="situation1">1. Qual è la sua situazione attuale?</label>
           <input id="situation1" data-score="0" placeholder="Descrivi la situazione" required>
         </div>
-        <!-- Problema -->
         <div class="question-card">
           <h3>Problema</h3>
           <label for="problem1">2. Quali problemi incontra?</label>
           <input id="problem1" data-score="0" placeholder="Descrivi il problema" required>
         </div>
-        <!-- Implicazione -->
         <div class="question-card">
           <h3>Implicazione</h3>
           <label for="implication1">3. Cosa succede se non risolve?</label>
           <input id="implication1" data-score="0" placeholder="Descrivi l'implicazione" required>
         </div>
-        <!-- Need/Benefit -->
         <div class="question-card">
           <h3>Need/Benefit</h3>
           <label for="need1">4. Quali benefici cerca?</label>
@@ -155,7 +147,7 @@
       </div>
     </section>
 
-    <!-- Risultati (Grafico) -->
+    <!-- Risultati -->
     <section id="risultati" class="section">
       <h2>Risultati</h2>
       <canvas id="scoreChart" role="img" aria-label="Grafico punteggi"></canvas>
@@ -164,18 +156,20 @@
     <!-- Esporta -->
     <section id="export" class="section">
       <h2>Esporta</h2>
-      <button id="exportExcelBtn" class="btn btn--primary">Esporta Excel</button>
-      <button id="exportPdfBtn" class="btn btn--primary">Esporta PDF</button>
-      <input id="logoUpload" type="file" accept="image/*">
+      <div class="export-controls">
+        <button id="exportExcelBtn" class="btn btn--primary">Esporta Excel</button>
+        <button id="exportPdfBtn" class="btn btn--primary">Esporta PDF</button>
+        <input id="logoUpload" type="file" accept="image/*">
+      </div>
     </section>
 
     <!-- Impostazioni -->
     <section id="settings" class="section">
       <h2>Impostazioni & Tip</h2>
       <label><input id="autoTheme" type="checkbox"> Tema automatico</label>
-      <label><input id="themeToggle" type="button" value="Cambia tema"></label>
+      <button id="themeToggle" class="btn btn--tertiary">Cambia tema</button>
+      <button id="resetBtn" class="btn btn--tertiary">Ricomincia</button>
     </section>
-
   </main>
 
   <!-- Footer -->
@@ -183,11 +177,11 @@
     &copy; 2025 QPWON Solutions
   </footer>
 
-  <!-- Librerie esterne -->
+  <!-- External Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <!-- JS Principale -->
+  <!-- Main JS -->
   <script type="module" src="script.js" defer></script>
 </body>
 </html>
