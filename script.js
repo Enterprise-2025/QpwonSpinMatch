@@ -1,160 +1,198 @@
-// script.js – Logica completa QPWONSpinMatch con wizard, flag e admin
-// Dipendenze via CDN: Chart.js, SheetJS (XLSX), jsPDF
+// script.js – Logica completa QPWONSpinMatch riscritta da zero
+// Dipendenze: Chart.js, SheetJS (XLSX), jsPDF (jspdf.jsPDF)
 
 document.addEventListener('DOMContentLoaded', () => {
-  // --- DOM ELEMENTS ---
-  const onboardingModal = document.getElementById('onboardingModal');
-  const onboardingSteps = Array.from(document.querySelectorAll('.onboarding-step'));
-  const prevBtn = document.getElementById('prevStepBtn');
-  const nextBtn = document.getElementById('nextStepBtn');
-  const statusText = document.getElementById('onboardingStatus');
-  const adminBtn = document.getElementById('adminRiapri');
+  // ----- DOM ELEMENTS -----
+  const modal = document.getElementById('onboardingModal');
+  const steps = Array.from(document.querySelectorAll('.onboarding-step'));
+  const btnPrev = document.getElementById('prevStepBtn');
+  const btnNext = document.getElementById('nextStepBtn');
+  const status = document.getElementById('onboardingStatus');
+  const btnAdmin = document.getElementById('adminRiapri');
+  const txtContext = document.getElementById('strategicContext');
+  const inputs = Array.from(document.querySelectorAll('#spin input'));
+  const bar = document.getElementById('progressBar');
+  const pct  = document.getElementById('progressPercent');
+  const btnShare = document.getElementById('toggleShareView');
+  const viewShare = document.getElementById('shareView');
+  const listShare = document.getElementById('shareList');
+  const secSmart = document.getElementById('smartmatch');
+  const outProfile = document.getElementById('profileName');
+  const outMatch   = document.getElementById('matchScore');
+  const outSol     = document.getElementById('solutionDesc');
+  const outBen     = document.getElementById('benefitsList');
+  const outAct     = document.getElementById('actionsList');
+  const canvas     = document.getElementById('scoreChart');
+  const btnXLS     = document.getElementById('exportExcelBtn');
+  const btnPDF     = document.getElementById('exportPdfBtn');
+  const inLogo     = document.getElementById('logoUpload');
+  const chkAuto    = document.getElementById('autoTheme');
+  const btnTheme   = document.getElementById('themeToggle');
+  const btnMenu    = document.getElementById('menuToggle');
+  const sidebar    = document.getElementById('sidebar');
+  const btnReset   = document.getElementById('resetBtn');
 
-  const strategicContext = document.getElementById('strategicContext');
-  const spinInputs = Array.from(document.querySelectorAll('#spin input'));
-  const progressBar = document.getElementById('progressBar');
-  const progressPercent = document.getElementById('progressPercent');
-
-  const shareBtn = document.getElementById('toggleShareView');
-  const shareView = document.getElementById('shareView');
-  const shareList = document.getElementById('shareList');
-
-  const smartmatchSection = document.getElementById('smartmatch');
-  const profileName = document.getElementById('profileName');
-  const matchScore = document.getElementById('matchScore');
-  const solutionDesc = document.getElementById('solutionDesc');
-  const benefitsList = document.getElementById('benefitsList');
-  const actionsList = document.getElementById('actionsList');
-
-  const scoreChartCanvas = document.getElementById('scoreChart');
-  const exportExcelBtn = document.getElementById('exportExcelBtn');
-  const exportPdfBtn = document.getElementById('exportPdfBtn');
-  const logoUpload = document.getElementById('logoUpload');
-
-  const autoTheme = document.getElementById('autoTheme');
-  const themeToggle = document.getElementById('themeToggle');
-
-  const menuToggle = document.getElementById('menuToggle');
-  const sidebar = document.getElementById('sidebar');
-
-  const resetBtn = document.getElementById('resetBtn');
-
-  // --- ONBOARDING WIZARD ---
-  let currentStep = 0;
-  function showStep(idx) {
-    onboardingSteps.forEach((s,i) => s.hidden = i !== idx);
-    prevBtn.hidden = idx === 0;
-    nextBtn.textContent = idx === onboardingSteps.length - 1 ? 'Fine' : 'Avanti';
+  // ----- ONBOARDING WIZARD -----
+  let stepIndex = 0;
+  function updateWizard() {
+    steps.forEach((s,i) => s.hidden = i !== stepIndex);
+    btnPrev.hidden = stepIndex === 0;
+    btnNext.textContent = stepIndex === steps.length - 1 ? 'Fine' : 'Avanti';
   }
-  function completeOnboarding() {
-    onboardingModal.hidden = true;
-    statusText.textContent = '✅ Onboarding completato';
-    localStorage.setItem('onboarded','true');
+  function finishOnboarding() {
+    modal.hidden = true;
+    status.textContent = '✅ Onboarding completato';
+    localStorage.setItem('onboarded','1');
   }
-  // Initialize onboarding
   if (!localStorage.getItem('onboarded')) {
-    onboardingModal.hidden = false;
-    statusText.textContent = '🚧 Onboarding in corso';
-    showStep(0);
+    modal.hidden = false;
+    status.textContent = '🚧 Onboarding in corso';
+    updateWizard();
   } else {
-    statusText.textContent = '✅ Onboarding completato';
-    onboardingModal.hidden = true;
+    modal.hidden = true;
+    status.textContent = '✅ Onboarding completato';
   }
-  prevBtn.addEventListener('click',() => { if(currentStep>0){currentStep--;showStep(currentStep);} });
-  nextBtn.addEventListener('click',() => {
-    if(currentStep<onboardingSteps.length-1){currentStep++;showStep(currentStep);} else completeOnboarding();
+  btnPrev.addEventListener('click', () => {
+    if (stepIndex>0) { stepIndex--; updateWizard(); }
   });
-  adminBtn.addEventListener('click',() => { localStorage.removeItem('onboarded'); location.reload(); });
+  btnNext.addEventListener('click', () => {
+    if (stepIndex<steps.length-1) {
+      stepIndex++; updateWizard();
+    } else finishOnboarding();
+  });
+  btnAdmin.addEventListener('click', () => {
+    localStorage.removeItem('onboarded'); location.reload();
+  });
 
-  // --- STATE PERSISTENCE ---
-  function saveState() {
+  // ----- STATE MANAGEMENT -----
+  function saveAll() {
     const state = {
-      strategicContext: strategicContext?.value||'',
-      spinAnswers: spinInputs.map(i=>i.value),
-      autoTheme: autoTheme?.checked||false
+      context: txtContext.value,
+      answers: inputs.map(i=>i.value),
+      dark: chkAuto.checked
     };
-    localStorage.setItem('qpwonState',JSON.stringify(state));
+    localStorage.setItem('qpState', JSON.stringify(state));
   }
-  function loadState() {
-    const raw = localStorage.getItem('qpwonState');
-    if(!raw)return;
-    try{
-      const data = JSON.parse(raw);
-      if(data.strategicContext) strategicContext.value = data.strategicContext;
-      if(Array.isArray(data.spinAnswers)) data.spinAnswers.forEach((v,i)=>{if(spinInputs[i])spinInputs[i].value=v;});
-      if(typeof data.autoTheme==='boolean') autoTheme.checked = data.autoTheme;
-    }catch{}
+  function loadAll() {
+    const raw = localStorage.getItem('qpState');
+    if (!raw) return;
+    try {
+      const st = JSON.parse(raw);
+      txtContext.value = st.context||'';
+      inputs.forEach((i,k)=>{ i.value = st.answers?.[k]||''; });
+      chkAuto.checked = !!st.dark;
+    } catch{};
   }
 
-  // --- PROGRESS SPIN ---
+  // ----- PROGRESS BAR -----
   function updateProgress() {
-    const filled = spinInputs.filter(i=>i.value.trim()!=='').length;
-    const pct = Math.round((filled/spinInputs.length)*100);
-    progressBar.style.height = pct+'%';
-    progressBar.setAttribute('aria-valuenow',pct);
-    progressPercent.textContent = pct+'%';
-    return pct;
+    const filled = inputs.filter(i=>i.value.trim()).length;
+    const percent = Math.round(filled/inputs.length*100);
+    bar.style.height = percent+'%';
+    bar.setAttribute('aria-valuenow',percent);
+    pct.textContent = percent+'%';
+    return percent;
   }
 
-  // --- CHART ---
-  function calculateScores() {
-    const pain = spinInputs.slice(0,4).reduce((s,i)=>s+Number(i.dataset.score||0),0);
-    const close = spinInputs.slice(4).reduce((s,i)=>s+Number(i.dataset.score||0),0);
-    return { painPct:Math.round((pain/(4*5))*100), closePct:Math.round((close/(4*5))*100) };
-  }
-  let chart;
-  function renderChart() {
-    if(!scoreChartCanvas)return;
-    const {painPct,closePct}=calculateScores();
-    const colors = [getComputedStyle(document.documentElement).getPropertyValue('--color-primary').trim(), getComputedStyle(document.documentElement).getPropertyValue('--color-secondary').trim()];
-    const data={labels:['Pain','Closing'],datasets:[{data:[painPct,closePct],backgroundColor:colors}]};
-    if(chart){chart.data=data;chart.update();}else{chart=new Chart(scoreChartCanvas,{type:'doughnut',data,options:{responsive:true,maintainAspectRatio:false}});}    
-  }
-
-  // --- SMARTMATCH ---
-  const profiles=[{name:'Basic',tags:{gestionale:1,crm:0,analytics:0}},{name:'Advanced',tags:{gestionale:2,crm:2,analytics:1}},{name:'Enterprise',tags:{gestionale:3,crm:3,analytics:2}}];
-  function computeSmartMatch(){
-    const max=profiles.reduce((m,p)=>Math.max(m,Object.values(p.tags).reduce((a,b)=>a+b,0)),0);
-    const scored=profiles.map(p=>{const t=Object.values(p.tags).reduce((a,b)=>a+b,0);return{...p,total:t,match:t/max};}).sort((a,b)=>b.match-a.match);
-    const top=scored[0];
-    if(top.match>0.6){
-      smartmatchSection.hidden=false;
-      profileName.textContent=top.name;
-      matchScore.textContent='Match: '+Math.round(top.match*100)+'%';
-      solutionDesc.textContent='Soluzione '+top.name+' pronta.';
-      benefitsList.innerHTML='<li>Vantaggio A</li><li>Vantaggio B</li>';
-      actionsList.innerHTML='<li>Passo 1</li><li>Passo 2</li>';
-    }else smartmatchSection.hidden=true;
+  // ----- CHART.JS -----
+  let chartObj;
+  function updateChart() {
+    if (!canvas) return;
+    const scores = inputs.map(i=>Number(i.dataset.score||0));
+    const pain = scores.slice(0,4).reduce((a,b)=>a+b,0);
+    const close= scores.slice(4).reduce((a,b)=>a+b,0);
+    const pPct = Math.round(pain/(4*5)*100);
+    const cPct = Math.round(close/(4*5)*100);
+    const clr1 = getComputedStyle(document.documentElement).getPropertyValue('--color-primary').trim();
+    const clr2 = getComputedStyle(document.documentElement).getPropertyValue('--color-secondary').trim();
+    const data = { labels:['Pain','Closing'], datasets:[{ data:[pPct,cPct], backgroundColor:[clr1,clr2] }] };
+    if (chartObj) {
+      chartObj.data = data; chartObj.update();
+    } else {
+      chartObj = new Chart(canvas,{ type:'doughnut', data, options:{responsive:true,maintainAspectRatio:false} });
+    }
   }
 
-  // --- EXPORT EXCEL ---
-  if(exportExcelBtn)exportExcelBtn.addEventListener('click',()=>{
-    const wb=XLSX.utils.book_new();
-    const rows=[['Campo','Valore'],['Contesto',strategicContext.value],...spinInputs.map(i=>[i.previousElementSibling.textContent,i.value])];
-    const ws=XLSX.utils.aoa_to_sheet(rows);XLSX.utils.book_append_sheet(wb,ws,'Report');XLSX.writeFile(wb,'Report.xlsx');
+  // ----- SMARTMATCH -----
+  const profiles = [
+    {name:'Basic', weights:[1,0,0]},
+    {name:'Advanced',weights:[2,2,1]},
+    {name:'Enterprise',weights:[3,3,2]}
+  ];
+  function runSmartMatch() {
+    const percent = updateProgress();
+    if (percent<60) { secSmart.hidden=true; return; }
+    const tagSum = profiles.map(p=>p.weights.reduce((a,b)=>a+b,0));
+    const maxSum = Math.max(...tagSum);
+    const scored = profiles.map((p,i)=>({ name:p.name, pct:tagSum[i]/maxSum }));
+    scored.sort((a,b)=>b.pct - a.pct);
+    const top = scored[0];
+    if (top.pct>0.6) {
+      secSmart.hidden=false;
+      outProfile.textContent = top.name;
+      outMatch.textContent = 'Match: '+Math.round(top.pct*100)+'%';
+      outSol.textContent = `Soluzione ${top.name} disponibile.`;
+      outBen.innerHTML = '<li>Benefit 1</li><li>Benefit 2</li>';
+      outAct.innerHTML = '<li>Azione A</li><li>Azione B</li>';
+    } else secSmart.hidden=true;
+  }
+
+  // ----- EXPORT EXCEL (SheetJS) -----
+  if (btnXLS) btnXLS.addEventListener('click', ()=>{
+    const wb = XLSX.utils.book_new();
+    const rows = [['Campo','Valore'], ['Contesto',txtContext.value], ...inputs.map(i=>[i.previousElementSibling.textContent,i.value])];
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb,ws,'Report');
+    XLSX.writeFile(wb,'Report.xlsx');
   });
 
-  // --- EXPORT PDF ---
-  function drawPdf(doc,logo){let y=20;doc.setFontSize(16);doc.text('Report',10,y);y+=10;if(logo)doc.addImage(logo,'PNG',150,10,40,20),y+=20;doc.setFontSize(12);doc.text('Contesto: '+strategicContext.value,10,y);y+=10;spinInputs.forEach(i=>{doc.text(i.previousElementSibling.textContent+': '+i.value,10,y);y+=8;});doc.save('Report.pdf');}
-  if(exportPdfBtn)exportPdfBtn.addEventListener('click',()=>{const pdf=new window.jspdf.jsPDF();if(logoUpload.files[0]){const r=new FileReader();r.onload=e=>drawPdf(pdf,e.target.result);r.readAsDataURL(logoUpload.files[0]);}else drawPdf(pdf,null);});
+  // ----- EXPORT PDF (jsPDF) -----
+  function makePdf(doc,logo){
+    let y=20; doc.setFontSize(16); doc.text('Report QPWON',10,y); y+=10;
+    if (logo) doc.addImage(logo,'PNG',150,10,40,20),y+=20;
+    doc.setFontSize(12); doc.text('Contesto: '+txtContext.value,10,y); y+=10;
+    inputs.forEach(i=>{ doc.text(i.previousElementSibling.textContent+': '+i.value,10,y); y+=8; });
+    doc.save('Report.pdf');
+  }
+  if (btnPDF) btnPDF.addEventListener('click', ()=>{
+    const pdf = new window.jspdf.jsPDF();
+    if (inLogo.files[0]) {
+      const reader = new FileReader(); reader.onload=e=>makePdf(pdf,e.target.result);
+      reader.readAsDataURL(inLogo.files[0]);
+    } else makePdf(pdf,null);
+  });
 
-  // --- LIVE SHARE ---
-  if(shareBtn)shareBtn.addEventListener('click',()=>{shareView.hidden=!shareView.hidden;if(!shareView.hidden)shareList.innerHTML=spinInputs.filter(i=>i.value).map(i=>'<li>'+i.previousElementSibling.textContent+': '+i.value+'</li>').join('');});
+  // ----- LIVE SHARE -----
+  if (btnShare) btnShare.addEventListener('click', ()=>{
+    viewShare.hidden = !viewShare.hidden;
+    if (!viewShare.hidden) viewShare.innerHTML = inputs.filter(i=>i.value).map(i=>`<li>${i.previousElementSibling.textContent}: ${i.value}</li>`).join('');
+  });
 
-  // --- THEME ---
-  function applyTheme(){if(autoTheme.checked)document.body.classList.toggle('dark-mode',window.matchMedia('(prefers-color-scheme: dark)').matches);}  
-  if(themeToggle)themeToggle.addEventListener('click',()=>document.body.classList.toggle('dark-mode'));
-  if(autoTheme)autoTheme.addEventListener('change',()=>{applyTheme();saveState();});
+  // ----- THEME TOGGLE -----
+  function applyTheme() {
+    document.body.classList.toggle('dark-mode', chkAuto.checked
+      ? window.matchMedia('(prefers-color-scheme: dark)').matches
+      : document.body.classList.contains('dark-mode')
+    );
+  }
+  if (btnTheme) btnTheme.addEventListener('click', ()=> document.body.classList.toggle('dark-mode'));
+  if (chkAuto) chkAuto.addEventListener('change', ()=>{ applyTheme(); saveAll(); });
 
-  // --- MENU MOBILE ---
-  if(menuToggle&&sidebar)menuToggle.addEventListener('click',()=>{sidebar.style.transform=sidebar.style.transform==='translateX(-100%)'?'translateX(0)':'translateX(-100%)';});
+  // ----- MOBILE MENU -----
+  if (btnMenu && sidebar) btnMenu.addEventListener('click', ()=>{
+    sidebar.style.transform = sidebar.style.transform==='translateX(-100%)'?'translateX(0)':'translateX(-100%)';
+  });
 
-  // --- RESET ---
-  if(resetBtn)resetBtn.addEventListener('click',()=>{if(confirm('Azzerare tutto?')){localStorage.clear();location.reload();}});
+  // ----- RESET TOOL -----
+  if (btnReset) btnReset.addEventListener('click', ()=>{
+    if (confirm('Ricominciare da capo?')) { localStorage.clear(); location.reload(); }
+  });
 
-  // --- BIND INPUT ---
-  [...spinInputs,strategicContext].forEach(el=>el.addEventListener('input',()=>{saveState();const p=updateProgress();renderChart();if(p>=60)computeSmartMatch();}));
+  // ----- BIND INPUT EVENTS -----
+  [...inputs, txtContext].forEach(el => el.addEventListener('input', () => {
+    saveAll(); updateProgress(); updateChart(); runSmartMatch();
+  }));
 
-  // --- INIT ---
-  loadState();updateProgress();renderChart();computeSmartMatch();applyTheme();
+  // ----- INITIALIZATION -----
+  loadAll(); updateProgress(); updateChart(); runSmartMatch(); applyTheme();
 });
