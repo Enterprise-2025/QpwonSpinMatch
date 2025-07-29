@@ -4,53 +4,67 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="QPWONSpin: Sales discovery tool con SPIN, SmartMatch, esportazione e integrazione CRM">
+  <meta name="description" content="QPWONSpinMatch: Discovery & SmartMatch Tool">
 
   <!-- PWA Manifest -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#00A89D">
 
-  <title>QPWONSpin · Sales Discovery</title>
+  <title>QPWONSpinMatch · Sales Discovery</title>
 
-  <!-- Font & CSS Variables -->
+  <!-- Fonts & CSS -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 
-<body class="app" aria-live="polite">
-  <!-- Onboarding Wizard -->
-  <div id="onboardingModal" class="modal" hidden>
+<body class="app">
+  <!-- Onboarding Modal -->
+  <div id="onboardingModal" class="modal">
     <div class="modal__content">
-      <h2>Benvenuto in QPWONSpin</h2>
-      <p>In 3 passi scoprirai come usare SPIN, il monitor di progresso e SmartMatch.</p>
-      <ol>
-        <li>Rispondi alle domande SPIN</li>
-        <li>Controlla il Pain e Closing Score</li>
-        <li>Scopri la soluzione migliore con SmartMatch</li>
-      </ol>
-      <button id="startOnboarding" class="btn btn--primary">Inizia</button>
+      <!-- Step 1 -->
+      <div class="onboarding-step" data-step="1">
+        <h2>Benvenuto in QPWONSpinMatch</h2>
+        <p>Questo strumento ti guiderà passo passo attraverso la discovery method.</p>
+      </div>
+      <!-- Step 2 -->
+      <div class="onboarding-step" data-step="2" hidden>
+        <h2>Raccogli il Contesto</h2>
+        <p>Inserisci informazioni su ambulatori, medici e obiettivi della struttura.</p>
+      </div>
+      <!-- Step 3 -->
+      <div class="onboarding-step" data-step="3" hidden>
+        <h2>Completa le domande SPIN</h2>
+        <p>Rispondi in modo esaustivo alle domande di Situazione, Problema, Implicazione e Need/Benefit.</p>
+      </div>
+      <!-- Step 4 -->
+      <div class="onboarding-step" data-step="4" hidden>
+        <h2>Scopri il tuo SmartMatch</h2>
+        <p>Al termine vedrai il profilo consigliato, benefici attesi e prossime azioni.</p>
+      </div>
+      <!-- Footer con navigazione step -->
+      <div class="modal-footer">
+        <button id="prevStepBtn" class="btn btn--tertiary">Indietro</button>
+        <button id="nextStepBtn" class="btn btn--primary">Avanti</button>
+      </div>
     </div>
+  </div>
+
+  <!-- Status & Admin Controls -->
+  <div class="onboarding-status">
+    <span id="onboardingStatus">🚧 Onboarding in corso</span>
+    <button id="adminRiapri" class="btn btn--secondary">🔁 Riapri Onboarding</button>
   </div>
 
   <!-- Header -->
   <header class="header">
-    <div class="header__left">
-      <button id="menuToggle" class="btn btn--icon" aria-label="Apri menu">
-        ☰
-      </button>
-      <h1 class="header__title">QPWONSpin</h1>
-    </div>
-    <div class="header__right">
-      <button id="sessionMgrBtn" class="btn btn--secondary">Sessioni</button>
-      <button id="themeToggle" class="btn btn--secondary" aria-label="Cambia tema">🌙</button>
-    </div>
+    <div class="header__title">QPWONSpinMatch</div>
   </header>
 
-  <!-- Sidebar Navigation -->
-  <aside id="sidebar" class="sidebar" role="navigation">
+  <!-- Sidebar -->
+  <aside id="sidebar" class="sidebar">
     <nav>
-      <ul class="sidebar__list">
+      <ul>
         <li><a href="#contesto">Contesto Strategico</a></li>
         <li><a href="#spin">Domande SPIN</a></li>
         <li><a href="#smartshare">Live Share</a></li>
@@ -62,63 +76,66 @@
     </nav>
   </aside>
 
-  <!-- Main Content -->
+  <!-- Main -->
   <main class="main">
     <!-- Progress Bar -->
-    <div class="progress" aria-label="Progresso SPIN">
-      <div class="progress__track">
-        <div id="progressBar" class="progress__bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" style="height:0%;"></div>
+    <section class="section progress-section">
+      <h2>Progresso SPIN</h2>
+      <div class="progress" aria-label="Progresso SPIN">
+        <div class="progress__track">
+          <div id="progressBar" class="progress__bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" style="height:0%"></div>
+        </div>
+        <div id="progressPercent" class="progress__percent">0%</div>
       </div>
-      <div id="progressPercent" class="progress__percent">0%</div>
-    </div>
-
-    <!-- Sezione: Contesto Strategico -->
-    <section id="contesto" class="section">
-      <h2>Contesto Strategico</h2>
-      <label for="strategicContext" class="visually-hidden">Descrivi l'azienda</label>
-      <textarea id="strategicContext" class="textarea" placeholder="Descrivi in breve l'azienda, mercato e obiettivi" required></textarea>
     </section>
 
-    <!-- Sezione: Domande SPIN -->
+    <!-- Contesto Strategico -->
+    <section id="contesto" class="section">
+      <h2>Contesto Strategico</h2>
+      <textarea id="strategicContext" placeholder="Es. 5 ambulatori, 18 medici, desiderio di crescita..." required></textarea>
+    </section>
+
+    <!-- Domande SPIN -->
     <section id="spin" class="section">
       <h2>Domande SPIN</h2>
       <div class="question-list">
+        <!-- Situazione -->
         <div class="question-card">
           <h3>Situazione</h3>
           <label for="situation1">1. Qual è la sua situazione attuale?</label>
-          <input id="situation1" type="text" placeholder="Risposta situazione" data-score="0" required>
+          <input id="situation1" data-score="0" placeholder="Descrivi la situazione" required>
         </div>
+        <!-- Problema -->
         <div class="question-card">
           <h3>Problema</h3>
-          <label for="problem1">2. Quali problemi incontra oggi?</label>
-          <input id="problem1" type="text" placeholder="Risposta problema" data-score="0" required>
+          <label for="problem1">2. Quali problemi incontra?</label>
+          <input id="problem1" data-score="0" placeholder="Descrivi il problema" required>
         </div>
+        <!-- Implicazione -->
         <div class="question-card">
           <h3>Implicazione</h3>
           <label for="implication1">3. Cosa succede se non risolve?</label>
-          <input id="implication1" type="text" placeholder="Risposta implicazione" data-score="0" required>
+          <input id="implication1" data-score="0" placeholder="Descrivi l'implicazione" required>
         </div>
+        <!-- Need/Benefit -->
         <div class="question-card">
-          <h3>Needs-payoff</h3>
+          <h3>Need/Benefit</h3>
           <label for="need1">4. Quali benefici cerca?</label>
-          <input id="need1" type="text" placeholder="Risposta needs-payoff" data-score="0" required>
+          <input id="need1" data-score="0" placeholder="Descrivi il beneficio" required>
         </div>
       </div>
     </section>
 
-    <!-- Sezione: Live Share -->
+    <!-- Live Share -->
     <section id="smartshare" class="section">
       <h2>Live Share</h2>
-      <div class="live-share">
-        <button id="toggleShareView" class="btn btn--tertiary">Mostra al cliente</button>
-        <div id="shareView" class="share-view" hidden>
-          <h3>Risposte SPIN</h3>
-          <ul id="shareList"></ul>
-        </div>
+      <button id="toggleShareView" class="btn btn--tertiary">Mostra al cliente</button>
+      <div id="shareView" class="share-view" hidden>
+        <ul id="shareList"></ul>
       </div>
     </section>
 
-    <!-- Sezione: SmartMatch -->
+    <!-- SmartMatch -->
     <section id="smartmatch" class="section" hidden>
       <h2>SmartMatch</h2>
       <div class="smartmatch">
@@ -130,63 +147,47 @@
         <div class="smartmatch__details">
           <h4>Soluzione</h4>
           <p id="solutionDesc"></p>
-          <h4>Benefici chiave</h4>
+          <h4>Benefici attesi</h4>
           <ul id="benefitsList"></ul>
-          <h4>Azioni consigliate</h4>
+          <h4>Azioni suggerite</h4>
           <ul id="actionsList"></ul>
         </div>
       </div>
     </section>
 
-    <!-- Sezione: Risultati -->
+    <!-- Risultati (Grafico) -->
     <section id="risultati" class="section">
       <h2>Risultati</h2>
-      <canvas id="scoreChart" role="img" aria-label="Grafico dei punteggi Pain e Closing"></canvas>
+      <canvas id="scoreChart" role="img" aria-label="Grafico punteggi"></canvas>
     </section>
 
-    <!-- Sezione: Esporta -->
+    <!-- Esporta -->
     <section id="export" class="section">
       <h2>Esporta</h2>
-      <div class="export-controls">
-        <button id="exportExcelBtn" class="btn btn--primary">Esporta Excel</button>
-        <button id="exportPdfBtn" class="btn btn--primary">Esporta PDF</button>
-        <input id="logoUpload" type="file" accept="image/*" class="file-input" aria-label="Carica logo cliente per PDF">
-      </div>
+      <button id="exportExcelBtn" class="btn btn--primary">Esporta Excel</button>
+      <button id="exportPdfBtn" class="btn btn--primary">Esporta PDF</button>
+      <input id="logoUpload" type="file" accept="image/*">
     </section>
 
-    <!-- Sezione: Impostazioni & Tip -->
+    <!-- Impostazioni -->
     <section id="settings" class="section">
       <h2>Impostazioni & Tip</h2>
-      <div class="settings-grid">
-        <div class="setting-item">
-          <label for="languageSelect">Registro Linguistico</label>
-          <select id="languageSelect">
-            <option value="friendly">Friendly</option>
-            <option value="formal">Formale</option>
-          </select>
-        </div>
-        <div class="setting-item">
-          <label for="autoTheme">Tema Automatico</label>
-          <input id="autoTheme" type="checkbox">
-        </div>
-      </div>
-      <div class="tip-box" aria-live="assertive">
-        <p id="businessTip">Tip: Ricorda di esplorare i costi nascosti del cliente!</p>
-      </div>
+      <label><input id="autoTheme" type="checkbox"> Tema automatico</label>
+      <label><input id="themeToggle" type="button" value="Cambia tema"></label>
     </section>
 
   </main>
 
   <!-- Footer -->
   <footer class="footer">
-    <small>&copy; 2025 QPWON Solutions · <a href="/privacy">Privacy</a></small>
+    &copy; 2025 QPWON Solutions
   </footer>
 
-  <!-- Script: librerie esterne -->
+  <!-- Librerie esterne -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <!-- Script principale -->
-  <script type="module" src="script.js"></script>
+  <!-- JS Principale -->
+  <script type="module" src="script.js" defer></script>
 </body>
 </html>
