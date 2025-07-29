@@ -7,7 +7,7 @@
   <meta name="description" content="QPWONSpin: Sales discovery tool con SPIN, SmartMatch, esportazione e integrazione CRM">
 
   <!-- PWA Manifest -->
-  <link rel="manifest" href="/manifest.json">
+  <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#00A89D">
 
   <title>QPWONSpin · Sales Discovery</title>
@@ -16,15 +16,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
-
-  <!-- Service Worker -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js');
-      });
-    }
-  </script>
 </head>
 
 <body class="app" aria-live="polite">
@@ -46,7 +37,7 @@
   <header class="header">
     <div class="header__left">
       <button id="menuToggle" class="btn btn--icon" aria-label="Apri menu">
-        <span class="icon-menu"></span>
+        ☰
       </button>
       <h1 class="header__title">QPWONSpin</h1>
     </div>
@@ -92,28 +83,26 @@
     <section id="spin" class="section">
       <h2>Domande SPIN</h2>
       <div class="question-list">
-        <!-- Card esempio: Situazione -->
         <div class="question-card">
           <h3>Situazione</h3>
           <label for="situation1">1. Qual è la sua situazione attuale?</label>
-          <input id="situation1" type="text" placeholder="Risposta situazione" required>
+          <input id="situation1" type="text" placeholder="Risposta situazione" data-score="0" required>
         </div>
         <div class="question-card">
           <h3>Problema</h3>
           <label for="problem1">2. Quali problemi incontra oggi?</label>
-          <input id="problem1" type="text" placeholder="Risposta problema" required>
+          <input id="problem1" type="text" placeholder="Risposta problema" data-score="0" required>
         </div>
         <div class="question-card">
           <h3>Implicazione</h3>
           <label for="implication1">3. Cosa succede se non risolve?</label>
-          <input id="implication1" type="text" placeholder="Risposta implicazione" required>
+          <input id="implication1" type="text" placeholder="Risposta implicazione" data-score="0" required>
         </div>
         <div class="question-card">
           <h3>Needs-payoff</h3>
           <label for="need1">4. Quali benefici cerca?</label>
-          <input id="need1" type="text" placeholder="Risposta needs-payoff" required>
+          <input id="need1" type="text" placeholder="Risposta needs-payoff" data-score="0" required>
         </div>
-        <!-- ... altre domande SPIN fino a 8 ... -->
       </div>
     </section>
 
@@ -123,7 +112,6 @@
       <div class="live-share">
         <button id="toggleShareView" class="btn btn--tertiary">Mostra al cliente</button>
         <div id="shareView" class="share-view" hidden>
-          <!-- Mostra solo risposte compilate -->
           <h3>Risposte SPIN</h3>
           <ul id="shareList"></ul>
         </div>
@@ -168,7 +156,7 @@
 
     <!-- Sezione: Impostazioni & Tip -->
     <section id="settings" class="section">
-      <h2>Impostazioni &amp; Tip</h2>
+      <h2>Impostazioni & Tip</h2>
       <div class="settings-grid">
         <div class="setting-item">
           <label for="languageSelect">Registro Linguistico</label>
@@ -194,7 +182,11 @@
     <small>&copy; 2025 QPWON Solutions · <a href="/privacy">Privacy</a></small>
   </footer>
 
-  <!-- Scripts -->
+  <!-- Script: librerie esterne -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- Script principale -->
   <script type="module" src="script.js"></script>
 </body>
 </html>
