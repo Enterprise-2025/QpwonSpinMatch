@@ -1,5 +1,5 @@
-// script.js – Logica completa e dettagliata per QPWONSpin
-// Dipendenze caricate via CDN: Chart.js (global Chart), SheetJS XLSX (global XLSX), jsPDF (global window.jspdf.jsPDF)
+// script.js – Logica completa e dettagliata per QPWONSpin (con guard sui listener nulli)
+// Dipendenze: Chart.js (global Chart), SheetJS XLSX (global XLSX), jsPDF (global window.jspdf.jsPDF)
 
 window.addEventListener('DOMContentLoaded', () => {
   // --- ELEMENTI DOM PRINCIPALI ---
@@ -31,7 +31,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const menuToggle = document.getElementById('menuToggle');
   const sidebar = document.getElementById('sidebar');
 
-  const resetBtn = document.getElementById('resetBtn');
+  const resetBtn = document.getElementById('resetBtn'); // potrebbe essere assente
 
   const onboardingModal = document.getElementById('onboardingModal');
   const startOnboarding = document.getElementById('startOnboarding');
@@ -39,10 +39,10 @@ window.addEventListener('DOMContentLoaded', () => {
   // --- STATO E PERSISTENZA ---
   function saveState() {
     const state = {
-      strategicContext: strategicContext.value,
+      strategicContext: strategicContext?.value || '',
       spinAnswers: spinInputs.map(i => i.value),
-      language: languageSelect.value,
-      autoTheme: autoTheme.checked
+      language: languageSelect?.value || '',
+      autoTheme: autoTheme?.checked || false
     };
     localStorage.setItem('qpwonState', JSON.stringify(state));
   }
@@ -52,14 +52,14 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!raw) return;
     try {
       const data = JSON.parse(raw);
-      if (data.strategicContext) strategicContext.value = data.strategicContext;
+      if (data.strategicContext && strategicContext) strategicContext.value = data.strategicContext;
       if (Array.isArray(data.spinAnswers)) {
         data.spinAnswers.forEach((val, idx) => {
           if (spinInputs[idx]) spinInputs[idx].value = val;
         });
       }
-      if (data.language) languageSelect.value = data.language;
-      if (typeof data.autoTheme === 'boolean') autoTheme.checked = data.autoTheme;
+      if (data.language && languageSelect) languageSelect.value = data.language;
+      if (typeof data.autoTheme === 'boolean' && autoTheme) autoTheme.checked = data.autoTheme;
     } catch (e) {
       console.warn('Errore parsing stato:', e);
     }
@@ -70,15 +70,19 @@ window.addEventListener('DOMContentLoaded', () => {
     const filled = spinInputs.filter(i => i.value.trim() !== '').length;
     const total = spinInputs.length;
     const pct = Math.round((filled / total) * 100);
-    progressBar.style.height = `${pct}%`;
-    progressBar.setAttribute('aria-valuenow', pct);
-    progressPercent.textContent = `${pct}%`;
+    if (progressBar) {
+      progressBar.style.height = `${pct}%`;
+      progressBar.setAttribute('aria-valuenow', pct);
+    }
+    if (progressPercent) progressPercent.textContent = `${pct}%`;
     return pct;
   }
 
   function calculateScores() {
-    const painSum = spinInputs.slice(0, 4).reduce((sum, inp) => sum + Number(inp.getAttribute('data-score') || 0), 0);
-    const closeSum = spinInputs.slice(4).reduce((sum, inp) => sum + Number(inp.getAttribute('data-score') || 0), 0);
+    const painSum = spinInputs.slice(0, 4)
+      .reduce((sum, inp) => sum + Number(inp.getAttribute('data-score') || 0), 0);
+    const closeSum = spinInputs.slice(4)
+      .reduce((sum, inp) => sum + Number(inp.getAttribute('data-score') || 0), 0);
     const painPct = Math.round((painSum / (4 * 5)) * 100);
     const closePct = Math.round((closeSum / (4 * 5)) * 100);
     return { painPct, closePct };
@@ -86,6 +90,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   let chart = null;
   function renderChart() {
+    if (!scoreChartCanvas) return;
     const { painPct, closePct } = calculateScores();
     const colors = [
       getComputedStyle(document.documentElement).getPropertyValue('--color-primary').trim(),
@@ -111,6 +116,7 @@ window.addEventListener('DOMContentLoaded', () => {
   ];
 
   function computeSmartMatch() {
+    if (!smartmatchSection) return;
     const maxTotal = Math.max(...profiles.map(p => Object.values(p.tags).reduce((a,b)=>a+b,0)));
     const scored = profiles.map(p => {
       const total = Object.values(p.tags).reduce((a,b)=>a+b,0);
@@ -130,17 +136,19 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   // --- EXPORT EXCEL ---
-  exportExcelBtn.addEventListener('click', () => {
-    const wb = XLSX.utils.book_new();
-    const rows = [
-      ['Campo', 'Valore'],
-      ['Contesto Strategico', strategicContext.value],
-      ...spinInputs.map(i => [i.previousElementSibling.textContent, i.value])
-    ];
-    const ws = XLSX.utils.aoa_to_sheet(rows);
-    XLSX.utils.book_append_sheet(wb, ws, 'Report');
-    XLSX.writeFile(wb, 'QPWONSpin_Report.xlsx');
-  });
+  if (exportExcelBtn) {
+    exportExcelBtn.addEventListener('click', () => {
+      const wb = XLSX.utils.book_new();
+      const rows = [
+        ['Campo', 'Valore'],
+        ['Contesto Strategico', strategicContext?.value || ''],
+        ...spinInputs.map(i => [i.previousElementSibling.textContent, i.value])
+      ];
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      XLSX.utils.book_append_sheet(wb, ws, 'Report');
+      XLSX.writeFile(wb, 'QPWONSpin_Report.xlsx');
+    });
+  }
 
   // --- EXPORT PDF ---
   function drawPdfContent(pdf, logoData) {
@@ -153,7 +161,7 @@ window.addEventListener('DOMContentLoaded', () => {
       y += 20;
     }
     pdf.setFontSize(12);
-    pdf.text(`Contesto: ${strategicContext.value}`, 10, y);
+    pdf.text(`Contesto: ${strategicContext?.value || ''}`, 10, y);
     y += 10;
     spinInputs.forEach(i => {
       pdf.text(`${i.previousElementSibling.textContent}: ${i.value}`, 10, y);
@@ -161,61 +169,70 @@ window.addEventListener('DOMContentLoaded', () => {
     });
     pdf.save('QPWONSpin_Report.pdf');
   }
-
-  exportPdfBtn.addEventListener('click', () => {
-    const pdf = new window.jspdf.jsPDF();
-    if (logoUpload.files[0]) {
-      const reader = new FileReader();
-      reader.onload = e => drawPdfContent(pdf, e.target.result);
-      reader.readAsDataURL(logoUpload.files[0]);
-    } else {
-      drawPdfContent(pdf, null);
-    }
-  });
+  if (exportPdfBtn) {
+    exportPdfBtn.addEventListener('click', () => {
+      const pdf = new window.jspdf.jsPDF();
+      if (logoUpload?.files[0]) {
+        const reader = new FileReader();
+        reader.onload = e => drawPdfContent(pdf, e.target.result);
+        reader.readAsDataURL(logoUpload.files[0]);
+      } else {
+        drawPdfContent(pdf, null);
+      }
+    });
+  }
 
   // --- LIVE SHARE ---
-  shareBtn.addEventListener('click', () => {
-    shareView.hidden = !shareView.hidden;
-    if (!shareView.hidden) {
-      shareList.innerHTML = spinInputs
-        .filter(i => i.value.trim())
-        .map(i => `<li>${i.previousElementSibling.textContent}: ${i.value}</li>`)
-        .join('');
-    }
-  });
+  if (shareBtn) {
+    shareBtn.addEventListener('click', () => {
+      shareView.hidden = !shareView.hidden;
+      if (!shareView.hidden) {
+        shareList.innerHTML = spinInputs
+          .filter(i => i.value.trim())
+          .map(i => `<li>${i.previousElementSibling.textContent}: ${i.value}</li>`)
+          .join('');
+      }
+    });
+  }
 
   // --- THEME & LANGUAGE ---
   function applyTheme() {
-    if (autoTheme.checked) {
+    if (autoTheme?.checked) {
       const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       document.body.classList.toggle('dark-mode', dark);
     }
   }
-  themeToggle.addEventListener('click', () => document.body.classList.toggle('dark-mode'));
-  autoTheme.addEventListener('change', () => { applyTheme(); saveState(); });
-  languageSelect.addEventListener('change', saveState);
+  if (themeToggle) themeToggle.addEventListener('click', () => document.body.classList.toggle('dark-mode'));
+  if (autoTheme) autoTheme.addEventListener('change', () => { applyTheme(); saveState(); });
+  if (languageSelect) languageSelect.addEventListener('change', saveState);
 
   // --- MENU MOBILE ---
-  menuToggle.addEventListener('click', () => {
-    sidebar.style.transform = sidebar.style.transform === 'translateX(-100%)' ? 'translateX(0)' : 'translateX(-100%)';
-  });
+  if (menuToggle && sidebar) {
+    menuToggle.addEventListener('click', () => {
+      sidebar.style.transform = sidebar.style.transform === 'translateX(-100%)' ? 'translateX(0)' : 'translateX(-100%)';
+    });
+  }
 
   // --- ONBOARDING WIZARD ---
-  if (!localStorage.getItem('qpwonOnboarded')) {
-    onboardingModal.hidden = false;
+  if (onboardingModal && startOnboarding) {
+    if (!localStorage.getItem('qpwonOnboarded')) {
+      onboardingModal.hidden = false;
+    }
+    startOnboarding.addEventListener('click', () => {
+      onboardingModal.hidden = true;
+      localStorage.setItem('qpwonOnboarded', 'true');
+    });
   }
-  startOnboarding.addEventListener('click', () => {
-    onboardingModal.hidden = true;
-    localStorage.setItem('qpwonOnboarded', 'true');
-  });
 
   // --- RESET ---
-  resetBtn.addEventListener('click', () => {
-    if (confirm('Sicuro di voler azzerare tutto?')) {
-      localStorage.clear();
-      location.reload();
-    }
-  });
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+      if (confirm('Sicuro di voler azzerare tutto?')) {
+        localStorage.clear();
+        location.reload();
+      }
+    });
+  }
 
   // --- BIND UPDATE EVENTS ---
   [...spinInputs, strategicContext].forEach(el => {
