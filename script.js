@@ -1,216 +1,163 @@
-// script.js – Logica QPWONSpin migliorata
-// Caricamento moduli esterni via CDN: Chart.js, SheetJS (XLSX), jsPDF
+// script.js – Logica dettagliata per QPWONSpin
+// Dipendenze caricate via CDN: Chart.js (global Chart), SheetJS XLSX (global XLSX), jsPDF (global window.jspdf.jsPDF)
 
-document.addEventListener('DOMContentLoaded', () => {
-  // --- Elementi DOM principali ---
-  const strategicContext = document.getElementById('strategicContext');
-  const spinInputs = Array.from(document.querySelectorAll('#spin input')); // domande SPIN
-  const progressBar = document.getElementById('progressBar');
-  const progressPercent = document.getElementById('progressPercent');
-  const shareBtn = document.getElementById('toggleShareView');
+// Wrapping tutto dentro DOMContentLoaded per essere sicuri che il DOM sia pronto
+window.addEventListener('DOMContentLoaded', () => {
+  // --- ELEMENTI DOM PRINCIPALI ---
+  const strategicContext = document.getElementById('strategicContext'); // textarea contesto
+  const spinInputs = Array.from(document.querySelectorAll('#spin input')); // tutti gli input SPIN
+  const progressBar = document.getElementById('progressBar'); // barra verticale
+  const progressPercent = document.getElementById('progressPercent'); // percentuale testuale
+
+  const shareBtn = document.getElementById('toggleShareView'); // toggle Live Share
   const shareView = document.getElementById('shareView');
   const shareList = document.getElementById('shareList');
-  const smartmatchSection = document.getElementById('smartmatch');
+
+  const smartmatchSection = document.getElementById('smartmatch'); // sezione SmartMatch
   const profileName = document.getElementById('profileName');
   const matchScore = document.getElementById('matchScore');
   const solutionDesc = document.getElementById('solutionDesc');
   const benefitsList = document.getElementById('benefitsList');
   const actionsList = document.getElementById('actionsList');
-  const scoreChartCanvas = document.getElementById('scoreChart');
+
+  const scoreChartCanvas = document.getElementById('scoreChart'); // canvas Chart.js
   const exportExcelBtn = document.getElementById('exportExcelBtn');
   const exportPdfBtn = document.getElementById('exportPdfBtn');
   const logoUpload = document.getElementById('logoUpload');
+
   const languageSelect = document.getElementById('languageSelect');
   const themeToggle = document.getElementById('themeToggle');
   const autoTheme = document.getElementById('autoTheme');
+
   const menuToggle = document.getElementById('menuToggle');
   const sidebar = document.getElementById('sidebar');
+
   const resetBtn = document.getElementById('resetBtn');
+
   const onboardingModal = document.getElementById('onboardingModal');
   const startOnboarding = document.getElementById('startOnboarding');
 
-  // --- Stato e Persistenza ---
+  // --- STATO E PERSISTENZA ---
+  // Salva lo stato corrente (contesto + risposte SPIN + impostazioni) in localStorage
   function saveState() {
     const state = {
       strategicContext: strategicContext.value,
-      spinAnswers: spinInputs.map(i => i.value),
+      spinAnswers: spinInputs.map(input => input.value),
       language: languageSelect.value,
       autoTheme: autoTheme.checked
     };
     localStorage.setItem('qpwonState', JSON.stringify(state));
   }
 
+  // Carica lo stato precedentemente salvato
   function loadState() {
-    const data = JSON.parse(localStorage.getItem('qpwonState') || '{}');
-    if (data.strategicContext) strategicContext.value = data.strategicContext;
-    if (Array.isArray(data.spinAnswers)) {
-      spinInputs.forEach((input, i) => { input.value = data.spinAnswers[i] || ''; });
+    const raw = localStorage.getItem('qpwonState');
+    if (!raw) return;
+    try {
+      const data = JSON.parse(raw);
+      if (data.strategicContext) strategicContext.value = data.strategicContext;
+      if (Array.isArray(data.spinAnswers)) {
+        data.spinAnswers.forEach((val, idx) => {
+          if (spinInputs[idx]) spinInputs[idx].value = val;
+        });
+      }
+      if (data.language) languageSelect.value = data.language;
+      if (typeof data.autoTheme === 'boolean') autoTheme.checked = data.autoTheme;
+    } catch (e) {
+      console.warn('Errore parsing stato:', e);
     }
-    if (data.language) languageSelect.value = data.language;
-    if (typeof data.autoTheme === 'boolean') autoTheme.checked = data.autoTheme;
   }
 
-  // --- Progress & Scoring ---
+  // --- PROGRESS BAR & SCORING ---
+  // Calcola e aggiorna la barra di progresso SPIN
   function updateProgress() {
     const filled = spinInputs.filter(i => i.value.trim() !== '').length;
     const total = spinInputs.length;
-    const percent = Math.round((filled / total) * 100);
-    progressBar.style.height = `${percent}%`;
-    progressBar.setAttribute('aria-valuenow', percent);
-    progressPercent.textContent = `${percent}%`;
-    return percent;
+    const pct = Math.round((filled / total) * 100);
+    progressBar.style.height = `${pct}%`;
+    progressBar.setAttribute('aria-valuenow', pct);
+    progressPercent.textContent = `${pct}%`;
+    return pct;
   }
 
+  // Calcola Pain & Closing Score come percentuali
   function calculateScores() {
-    // Esempio: punteggio numerico da 1 a 5 sui post-SPIN (stub)
-    const pain = spinInputs.slice(0, 4)
-      .reduce((sum, i) => sum + (parseInt(i.getAttribute('data-score')) || 0), 0);
-    const closing = spinInputs.slice(4).reduce((sum, i) => sum + (parseInt(i.getAttribute('data-score')) || 0), 0);
-    const painPct = Math.round((pain / (4 * 5)) * 100);
-    const closePct = Math.round((closing / (4 * 5)) * 100);
+    // In questo esempio ogni input SPIN non-numerico ha data-score="0"
+    const painSum = spinInputs.slice(0, 4)
+      .reduce((sum, inp) => sum + Number(inp.getAttribute('data-score') || 0), 0);
+    const closeSum = spinInputs.slice(4)
+      .reduce((sum, inp) => sum + Number(inp.getAttribute('data-score') || 0), 0);
+    const painPct = Math.round((painSum / (4 * 5)) * 100);
+    const closePct = Math.round((closeSum / (4 * 5)) * 100);
     return { painPct, closePct };
   }
 
   let chart = null;
+  // Rendering o aggiornamento del grafico Chart.js
   function renderChart() {
     const { painPct, closePct } = calculateScores();
     const data = {
       labels: ['Pain Score', 'Closing Score'],
-      datasets: [{ data: [painPct, closePct], backgroundColor: ['var(--color-primary)', 'var(--color-secondary)'] }]
+      datasets: [{ data: [painPct, closePct], backgroundColor: [getComputedStyle(document.documentElement).getPropertyValue('--color-primary').trim(), getComputedStyle(document.documentElement).getPropertyValue('--color-secondary').trim()] }]
     };
     if (chart) {
       chart.data = data;
       chart.update();
     } else {
-      chart = new Chart(scoreChartCanvas, {
-        type: 'doughnut', data,
-        options: { responsive: true, maintainAspectRatio: false }
-      });
+      chart = new Chart(scoreChartCanvas, { type: 'doughnut', data, options: { responsive: true, maintainAspectRatio: false } });
     }
   }
 
-  // --- SmartMatch ---
+  // --- SMARTMATCH MECHANISM ---
   const profiles = [
-    { name: 'Basic', tags: { gestionale: 1, crm: 1, analytics: 0 } },
+    { name: 'Basic', tags: { gestionale: 1, crm: 0, analytics: 0 } },
     { name: 'Advanced', tags: { gestionale: 2, crm: 2, analytics: 1 } },
     { name: 'Enterprise', tags: { gestionale: 3, crm: 3, analytics: 2 } }
   ];
 
   function computeSmartMatch() {
-    // Calcola corrispondenza semplice: somma dei punteggi dei tag in base alle risposte
-    const results = profiles.map(p => {
-      const score = Object.values(p.tags).reduce((s, v) => s + v, 0);
-      return { name: p.name, score };
-    }).sort((a, b) => b.score - a.score);
-    const top = results[0];
-    const maxScore = profiles.reduce((max, p) => Math.max(max, Object.values(p.tags).reduce((s,v)=>s+v,0)), 0);
-    const matchPct = top.score / maxScore;
-    if (matchPct > 0.6) {
+    // Semplice somma dei pesi per demo
+    const maxTotal = Math.max(...profiles.map(p => Object.values(p.tags).reduce((a,b)=>a+b,0)));
+    const scored = profiles.map(p => {
+      const total = Object.values(p.tags).reduce((a,b)=>a+b,0);
+      return { name: p.name, score: total, matchPct: total / maxTotal };
+    }).sort((a,b) => b.matchPct - a.matchPct);
+    const top = scored[0];
+    if (top.matchPct > 0.6) {
       smartmatchSection.hidden = false;
       profileName.textContent = top.name;
-      matchScore.textContent = `Match: ${Math.round(matchPct*100)}%`;
-      solutionDesc.textContent = `Soluzione ${top.name} con funzionalità complete.`;
-      benefitsList.innerHTML = `<li>Benefit A</li><li>Benefit B</li>`;
-      actionsList.innerHTML = `<li>Passo 1</li><li>Passo 2</li>`;
+      matchScore.textContent = `Match: ${Math.round(top.matchPct * 100)}%`;
+      solutionDesc.textContent = `Soluzione ${top.name} configurata per le tue esigenze.`;
+      benefitsList.innerHTML = ['<li>Benefit A</li>', '<li>Benefit B</li>', '<li>Benefit C</li>'].join('');
+      actionsList.innerHTML = ['<li>Fase 1: Analisi</li>', '<li>Fase 2: Proposta</li>'].join('');
     } else {
       smartmatchSection.hidden = true;
     }
   }
 
-  // --- Export Excel ---
+  // --- EXPORT EXCEL via SheetJS ---
   exportExcelBtn.addEventListener('click', () => {
     const wb = XLSX.utils.book_new();
-    const data = [
-      { Campo: 'Contesto Strategico', Valore: strategicContext.value },
-      ...spinInputs.map(i => ({ Campo: i.previousElementSibling.textContent, Valore: i.value }))
+    const rows = [
+      ['Campo', 'Valore'],
+      ['Contesto Strategico', strategicContext.value],
+      ...spinInputs.map(i => [i.previousElementSibling.textContent, i.value])
     ];
-    const ws = XLSX.utils.json_to_sheet(data);
+    const ws = XLSX.utils.aoa_to_sheet(rows);
     XLSX.utils.book_append_sheet(wb, ws, 'Report');
     XLSX.writeFile(wb, 'QPWONSpin_Report.xlsx');
   });
 
-  // --- Export PDF ---
+  // --- EXPORT PDF via jsPDF ---
   exportPdfBtn.addEventListener('click', () => {
-    const pdf = new jsPDF();
+    const pdf = new window.jspdf.jsPDF();
     if (logoUpload.files[0]) {
       const reader = new FileReader();
-      reader.onload = e => {
-        pdf.addImage(e.target.result, 'PNG', 10, 10, 40, 20);
-        drawPdfContent(pdf);
-      };
+      reader.onload = e => drawPdfContent(pdf, e.target.result);
       reader.readAsDataURL(logoUpload.files[0]);
     } else {
-      drawPdfContent(pdf);
-    }
-  });
-  function drawPdfContent(pdf) {
-    pdf.setFontSize(12);
-    pdf.text('QPWONSpin Report', 10, 40);
-    pdf.text(`Contesto: ${strategicContext.value}`, 10, 50);
-    let y = 60;
-    spinInputs.forEach(i => {
-      pdf.text(`${i.previousElementSibling.textContent}: ${i.value}`, 10, y);
-      y += 10;
-    });
-    pdf.save('QPWONSpin_Report.pdf');
-  }
-
-  // --- Live Share ---
-  shareBtn.addEventListener('click', () => {
-    shareView.hidden = !shareView.hidden;
-    if (!shareView.hidden) {
-      shareList.innerHTML = spinInputs
-        .filter(i => i.value.trim())
-        .map(i => `<li>${i.previousElementSibling.textContent}: ${i.value}</li>`)
-        .join('');
+      drawPdfContent(pdf, null);
     }
   });
 
-  // --- Theme & Language ---
-  function applyTheme() {
-    if (autoTheme.checked) {
-      document.body.classList.toggle('dark-mode', window.matchMedia('(prefers-color-scheme: dark)').matches);
-    }
-  }
-  themeToggle.addEventListener('click', () => document.body.classList.toggle('dark-mode'));
-  autoTheme.addEventListener('change', applyTheme);
-  languageSelect.addEventListener('change', saveState);
 
-  // --- Menu Toggle (mobile) ---
-  menuToggle.addEventListener('click', () => {
-    sidebar.style.transform = sidebar.style.transform === 'translateX(-100%)' ? 'translateX(0)' : 'translateX(-100%)';
-  });
-
-  // --- Onboarding Wizard ---
-  if (!localStorage.getItem('qpwonOnboarded')) {
-    onboardingModal.hidden = false;
-  }
-  startOnboarding.addEventListener('click', () => {
-    onboardingModal.hidden = true;
-    localStorage.setItem('qpwonOnboarded', 'true');
-  });
-
-  // --- Reset ---
-  resetBtn.addEventListener('click', () => {
-    if (confirm('Sicuro di voler azzerare tutto?')) {
-      localStorage.clear();
-      location.reload();
-    }
-  });
-
-  // --- Evento su tutti i campi per aggiornamenti ---
-  [...spinInputs, strategicContext].forEach(el =>
-    el.addEventListener('input', () => {
-      saveState();
-      const pct = updateProgress();
-      renderChart();
-      if (pct >= 60) computeSmartMatch();
-    })
-  );
-
-  // --- Inizializzazione ---
-  loadState();
-  updateProgress();
-  renderChart();
-  applyTheme();
-});
