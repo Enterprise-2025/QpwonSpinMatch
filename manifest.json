@@ -1,0 +1,9 @@
+{
+  "name": "QPWONSpin",
+  "short_name": "Spin",
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#00A89D",
+  "background_color": "#ffffff",
+  "icons": []
+}
