@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>QPWON SpinMatch</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icons/icon-192.png" type="image/png" />
+  <meta name="theme-color" content="#2563eb" />
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Librerie (defer per performance) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
+</head>
+<body>
+  <!-- Skip link (accessibilità) -->
+  <a class="sr-only sr-only-focusable" href="#mainContent">Salta al contenuto principale</a>
+
+  <!-- HEADER -->
+  <header class="header" role="banner" aria-label="Intestazione applicazione">
+    <div class="header-left">
+      <h1 class="app-title">QPWON SpinMatch</h1>
+      <span id="leadPill" class="lead-pill" role="status" aria-live="polite" aria-label="Stato lead">
+        • Nessuna valutazione
+      </span>
+    </div>
+    <div class="header-right">
+      <button id="helpBtn" class="btn-tertiary" type="button" aria-label="Apri guida rapida">Guida</button>
+      <button id="newSessionBtn" class="btn-secondary" type="button" aria-label="Avvia nuova sessione">
+        Nuova Sessione
+      </button>
+    </div>
+  </header>
+
+  <!-- LAYOUT PRINCIPALE -->
+  <div class="main" id="mainContent" role="main">
+    <!-- NAV laterale (scroll-spy) -->
+    <aside class="sidebar" aria-label="Navigazione SPIN">
+      <nav>
+        <ul>
+          <li><button class="step-link" data-step="0" aria-controls="step-0" aria-label="Vai a Info Lead">0. Info Lead</button></li>
+          <li><button class="step-link" data-step="1" aria-controls="step-1" aria-label="Vai a Contesto">1. Contesto</button></li>
+          <li><button class="step-link" data-step="2" aria-controls="step-2" aria-label="Vai a Costi Nascosti">2. Costi Nascosti</button></li>
+          <li><button class="step-link" data-step="3" aria-controls="step-3" aria-label="Vai a Opportunità">3. Opportunità</button></li>
+          <li><button class="step-link" data-step="4" aria-controls="step-4" aria-label="Vai a SPIN Selling">4. SPIN Selling</button></li>
+          <li><button class="step-link" data-step="5" aria-controls="step-5" aria-label="Vai a Survey Finale">5. Survey Finale</button></li>
+        </ul>
+      </nav>
+    </aside>
+
+    <!-- FORM PRINCIPALE -->
+    <section class="form-section" aria-labelledby="discoveryTitle">
+      <h2 id="discoveryTitle" class="sr-only">Modulo discovery</h2>
+
+      <form id="discoveryForm" novalidate data-autosave="true" aria-describedby="autosaveHint">
+        <p id="autosaveHint" class="form-hint">Il modulo viene salvato automaticamente mentre compili.</p>
+
+        <!-- STEP 0: INFO LEAD -->
+        <fieldset class="step" id="step-0" aria-label="Informazioni clinica">
+          <legend>0. Info Lead</legend>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="clinica_nome">Nome Clinica</label>
+              <input id="clinica_nome" name="clinica_nome" type="text" required />
+            </div>
+            <div class="form-group">
+              <label for="clinica_citta">Città</label>
+              <input id="clinica_citta" name="clinica_citta" type="text" />
+            </div>
+            <div class="form-group">
+              <label for="clinica_indirizzo">Indirizzo</label>
+              <input id="clinica_indirizzo" name="clinica_indirizzo" type="text" />
+            </div>
+            <div class="form-group">
+              <label for="clinica_tel">Telefono</label>
+              <input id="clinica_tel" name="clinica_tel" type="tel" inputmode="tel" />
+            </div>
+            <div class="form-group">
+              <label for="referente_nome">Referente</label>
+              <input id="referente_nome" name="referente_nome" type="text" />
+            </div>
+            <div class="form-group">
+              <label for="referente_ruolo">Ruolo</label>
+              <input id="referente_ruolo" name="referente_ruolo" type="text" />
+            </div>
+            <div class="form-group">
+              <label for="referente_mail">Mail</label>
+              <input id="referente_mail" name="referente_mail" type="email" inputmode="email" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="note_iniziali">Note libere</label>
+            <textarea id="note_iniziali" name="note_iniziali" rows="3"></textarea>
+          </div>
+        </fieldset>
+
+        <!-- STEP 1: CONTESTO -->
+        <fieldset class="step" id="step-1" aria-label="Contesto e strategia">
+          <legend>1. Contesto e Strategia</legend>
+
+          <div class="autofill" data-section="contesto" aria-label="Suggerimenti automatici contesto"></div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="struttura_tipo">Tipo di struttura</label>
+              <select id="struttura_tipo" name="struttura_tipo"
+                      data-altro-target="struttura_tipo_altro" aria-controls="struttura_tipo_altro">
+                <option value="">-- Seleziona --</option>
+                <option>Poliambulatorio</option>
+                <option>Centro medico</option>
+                <option>Studio privato</option>
+                <option value="altro">Altro</option>
+              </select>
+            </div>
+            <div class="form-group" id="grp_struttura_tipo_altro" style="display:none;">
+              <label for="struttura_tipo_altro">Specificare “Altro”</label>
+              <input id="struttura_tipo_altro" name="struttura_tipo_altro" type="text" disabled />
+            </div>
+
+            <div class="form-group">
+              <label for="n_medici">Numero di medici</label>
+              <input id="n_medici" name="n_medici" type="number" min="1" step="1" />
+            </div>
+
+            <div class="form-group">
+              <label for="gestionale">Gestionale in uso</label>
+              <select id="gestionale" name="gestionale"
+                      data-altro-target="gestionale_altro" aria-controls="gestionale_altro">
+                <option value="">-- Seleziona --</option>
+                <option>Nessuno</option>
+                <option>GipoNext</option>
+                <option>Altro CRM</option>
+                <option value="altro">Altro</option>
+              </select>
+            </div>
+            <div class="form-group" id="grp_gestionale_altro" style="display:none;">
+              <label for="gestionale_altro">Specificare “Altro”</label>
+              <input id="gestionale_altro" name="gestionale_altro" type="text" disabled />
+            </div>
+
+            <div class="form-group">
+              <label for="prenotazioni_canale">Canale principale di prenotazione</label>
+              <select id="prenotazioni_canale" name="prenotazioni_canale"
+                      data-altro-target="prenotazioni_canale_altro" aria-controls="prenotazioni_canale_altro">
+                <option value="">-- Seleziona --</option>
+                <option>Telefono</option>
+                <option>Sito web</option>
+                <option>MioDottore</option>
+                <option value="altro">Altro</option>
+              </select>
+            </div>
+            <div class="form-group" id="grp_prenotazioni_canale_altro" style="display:none;">
+              <label for="prenotazioni_canale_altro">Specificare “Altro”</label>
+              <input id="prenotazioni_canale_altro" name="prenotazioni_canale_altro" type="text" disabled />
+            </div>
+          </div>
+        </fieldset>
+
+        <!-- STEP 2: COSTI NASCOSTI -->
+        <fieldset class="step" id="step-2" aria-label="Costi nascosti">
+          <legend>2. Costi Nascosti</legend>
+
+          <div class="autofill" data-section="costi" aria-label="Suggerimenti automatici costi"></div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="tempo_compiti">Tempo su compiti manuali (ore/giorno)</label>
+              <input id="tempo_compiti" name="tempo_compiti" type="number" step="0.25" min="0" />
+            </div>
+            <div class="form-group">
+              <label for="perdite_stimate">Perdite stimate (€/mese)</label>
+              <input id="perdite_stimate" name="perdite_stimate" type="number" step="1" min="0" />
+            </div>
+            <div class="form-group">
+              <label for="area_critica">Area più critica</label>
+              <select id="area_critica" name="area_critica"
+                      data-altro-target="area_critica_altro" aria-controls="area_critica_altro">
+                <option value="">-- Seleziona --</option>
+                <option>No-show</option>
+                <option>Overbooking/Agende</option>
+                <option>Inseguiti al telefono</option>
+                <option value="altro">Altro</option>
+              </select>
+            </div>
+            <div class="form-group" id="grp_area_critica_altro" style="display:none;">
+              <label for="area_critica_altro">Specificare “Altro”</label>
+              <input id="area_critica_altro" name="area_critica_altro" type="text" disabled />
+            </div>
+          </div>
+        </fieldset>
+
+        <!-- STEP 3: OPPORTUNITÀ -->
+        <fieldset class="step" id="step-3" aria-label="Opportunità">
+          <legend>3. Opportunità</legend>
+
+          <div class="autofill" data-section="opportunita" aria-label="Suggerimenti automatici opportunità"></div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="obiettivo_6m">Obiettivo 6 mesi</label>
+              <select id="obiettivo_6m" name="obiettivo_6m"
+                      data-altro-target="obiettivo_6m_altro" aria-controls="obiettivo_6m_altro">
+                <option value="">-- Seleziona --</option>
+                <option>Aumentare pazienti</option>
+                <option>Ottimizzare processi</option>
+                <option>Ridurre costi</option>
+                <option value="altro">Altro</option>
+              </select>
+            </div>
+            <div class="form-group" id="grp_obiettivo_6m_altro" style="display:none;">
+              <label for="obiettivo_6m_altro">Specificare “Altro”</label>
+              <input id="obiettivo_6m_altro" name="obiettivo_6m_altro" type="text" disabled />
+            </div>
+
+            <div class="form-group">
+              <label for="miglioramento_top">Miglioramento più utile</label>
+              <select id="miglioramento_top" name="miglioramento_top"
+                      data-altro-target="miglioramento_top_altro" aria-controls="miglioramento_top_altro">
+                <option value="">-- Seleziona --</option>
+                <option>Automatizzare prenotazioni</option>
+                <option>CRM follow-up</option>
+                <option>Reportistica avanzata</option>
+                <option value="altro">Altro</option>
+              </select>
+            </div>
+            <div class="form-group" id="grp_miglioramento_top_altro" style="display:none;">
+              <label for="miglioramento_top_altro">Specificare “Altro”</label>
+              <input id="miglioramento_top_altro" name="miglioramento_top_altro" type="text" disabled />
+            </div>
+          </div>
+        </fieldset>
+
+        <!-- STEP 4: SPIN SELLING -->
+        <fieldset class="step" id="step-4" aria-label="SPIN Selling">
+          <legend>4. SPIN Selling</legend>
+
+          <div class="autofill" data-section="spin" aria-label="Suggerimenti automatici SPIN"></div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="problema_principale">Problema principale oggi</label>
+              <select id="problema_principale" name="problema_principale"
+                      data-altro-target="problema_principale_altro" aria-controls="problema_principale_altro">
+                <option value="">-- Seleziona --</option>
+                <option>Agende caotiche</option>
+                <option>No-show alto</option>
+                <option>Processi scollegati</option>
+                <option value="altro">Altro</option>
+              </select>
+            </div>
+            <div class="form-group" id="grp_problema_principale_altro" style="display:none;">
+              <label for="problema_principale_altro">Specificare “Altro”</label>
+              <input id="problema_principale_altro" name="problema_principale_altro" type="text" disabled />
+            </div>
+
+            <div class="form-group">
+              <label for="implicazioni">Implicazioni principali</label>
+              <select id="implicazioni" name="implicazioni"
+                      data-altro-target="implicazioni_altro" aria-controls="implicazioni_altro">
+                <option value="">-- Seleziona --</option>
+                <option>Perdite economiche</option>
+                <option>Clienti insoddisfatti</option>
+                <option>Team sotto stress</option>
+                <option value="altro">Altro</option>
+              </select>
+            </div>
+            <div class="form-group" id="grp_implicazioni_altro" style="display:none;">
+              <label for="implicazioni_altro">Specificare “Altro”</label>
+              <input id="implicazioni_altro" name="implicazioni_altro" type="text" disabled />
+            </div>
+
+            <div class="form-group">
+              <label for="situazione_ideale">Situazione ideale</label>
+              <select id="situazione_ideale" name="situazione_ideale"
+                      data-altro-target="situazione_ideale_altro" aria-controls="situazione_ideale_altro">
+                <option value="">-- Seleziona --</option>
+                <option>Sistema unico integrato</option>
+                <option>Promemoria automatici</option>
+                <option>Dashboard realtime</option>
+                <option value="altro">Altro</option>
+              </select>
+            </div>
+            <div class="form-group" id="grp_situazione_ideale_altro" style="display:none;">
+              <label for="situazione_ideale_altro">Specificare “Altro”</label>
+              <input id="situazione_ideale_altro" name="situazione_ideale_altro" type="text" disabled />
+            </div>
+          </div>
+
+          <div class="actions-row">
+            <button type="button" id="runRecBtn" class="btn-primary" aria-label="Ottieni raccomandazione in base alle risposte">
+              Ottieni Raccomandazione
+            </button>
+          </div>
+        </fieldset>
+
+        <!-- STEP 5: SURVEY FINALE -->
+        <fieldset class="step" id="step-5" aria-label="Survey finale">
+          <legend>5. Survey Finale</legend>
+
+          <div class="form-group">
+            <label for="survey-consapevolezza">Quanto è urgente risolvere le criticità attuali?</label>
+            <select id="survey-consapevolezza" name="consapevolezza" required>
+              <option value="">-- Seleziona --</option>
+              <option value="alta">Urgente e prioritario</option>
+              <option value="media">Rilevante, ma non urgente</option>
+              <option value="bassa">Non particolarmente urgente</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="survey-interesse">Quanto siete interessati alla soluzione presentata?</label>
+            <select id="survey-interesse" name="interesse" required>
+              <option value="">-- Seleziona --</option>
+              <option value="alta">Molto interessati</option>
+              <option value="media">Abbastanza interessati</option>
+              <option value="bassa">Poco interessati</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="survey-budget">Avete già un budget disponibile?</label>
+            <select id="survey-budget" name="budget" required>
+              <option value="">-- Seleziona --</option>
+              <option value="si">Sì, già stanziato</option>
+              <option value="decidere">Da definire internamente</option>
+              <option value="no">No, serve approvazione</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="survey-timeline">In che tempistiche pensate di procedere?</label>
+            <select id="survey-timeline" name="timeline" required>
+              <option value="">-- Seleziona --</option>
+              <option value="1m">Entro 1 mese</option>
+              <option value="3m">Entro 3 mesi</option>
+              <option value="oltre">Dopo 3 mesi</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="survey-blocco">Qual è il principale ostacolo a procedere?</label>
+            <select id="survey-blocco" name="blocco" required
+                    data-altro-target="survey_blocco_altro" aria-controls="survey_blocco_altro">
+              <option value="">-- Seleziona --</option>
+              <option value="direzione">Decisione direzione</option>
+              <option value="roi">Dubbi sul ROI</option>
+              <option value="pronto">Nessun blocco, pronti</option>
+              <option value="altro">Altro (specificare)</option>
+            </select>
+          </div>
+          <div class="form-group" id="grp_survey_blocco_altro" style="display:none;">
+            <label for="survey_blocco_altro">Specificare “Altro”</label>
+            <input id="survey_blocco_altro" name="survey_blocco_altro" type="text" disabled />
+          </div>
+
+          <div class="actions-row">
+            <button type="button" id="surveySubmitBtn" class="btn-primary" aria-label="Valuta la survey e mostra stato lead">
+              Valuta Survey
+            </button>
+          </div>
+        </fieldset>
+      </form>
+    </section>
+
+    <!-- MATCH SUMMARY / OUTPUT -->
+    <aside id="matchSummary" class="match-summary" aria-label="Risultati e materiale da esportare">
+      <h3>Risultati</h3>
+
+      <div class="lead-badge-row">
+        <span id="leadBadge" class="lead-badge" aria-hidden="true">Nessuna valutazione</span>
+      </div>
+
+      <div class="card result-card">
+        <div class="result-item">
+          <strong>Soluzione consigliata:</strong>
+          <span id="outputRaccomandazione" class="emph"></span>
+        </div>
+        <div class="result-item">
+          <strong>Benefici:</strong>
+          <span id="outputBenefici"></span>
+        </div>
+        <div class="result-item">
+          <strong>Caso studio:</strong>
+          <span id="outputCasoStudio"></span>
+        </div>
+        <div class="result-item">
+          <strong>Miglioramento stimato:</strong>
+          <span id="outputMiglioramento" class="emph"></span>
+        </div>
+      </div>
+
+      <div class="card" id="caseStudyCard">
+        <h4 class="chart-title">Case study coerenti</h4>
+        <div id="caseStudyGrid"></div>
+      </div>
+
+      <div class="charts">
+        <div class="chart-block">
+          <h4 class="chart-title">Impatto stimato</h4>
+          <canvas id="pieChart" aria-label="Grafico a torta impatto" role="img"></canvas>
+        </div>
+        <div class="chart-block">
+          <h4 class="chart-title">Trend pazienti (prima → dopo)</h4>
+          <canvas id="sparklineChart" aria-label="Trend pazienti" role="img"></canvas>
+        </div>
+      </div>
+
+      <div class="card" id="nextSteps">
+        <h4 class="chart-title">Prossimi passi</h4>
+        <div id="nextStepsList"></div>
+      </div>
+
+      <div class="export-btns">
+        <button id="exportPDF" class="btn-secondary" type="button" aria-label="Esporta PDF completo con dati, raccomandazione, case study e grafici">
+          Esporta PDF
+        </button>
+        <button id="openPreventivo" class="btn-secondary" type="button" aria-label="Apri preventivo per la firma digitale">
+          Apri Preventivo
+        </button>
+      </div>
+    </aside>
+  </div>
+
+  <!-- TOAST / NOTIFICHE -->
+  <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- ONBOARDING OVERLAY -->
+  <div id="onboardingOverlay" class="onboarding hidden" role="dialog" aria-modal="true" aria-labelledby="onboardTitle">
+    <div class="onboarding-content">
+      <h3 id="onboardTitle">Benvenuto in QPWON SpinMatch</h3>
+      <ol class="onboarding-steps">
+        <li><strong>Info Lead:</strong> inserisci i dati base della clinica.</li>
+        <li><strong>Contesto:</strong> usa i suggerimenti rapidi per partire veloce.</li>
+        <li><strong>Costi Nascosti:</strong> quantifica tempo perso e perdite stimate.</li>
+        <li><strong>Opportunità:</strong> definisci obiettivi e miglioramenti desiderati.</li>
+        <li><strong>SPIN:</strong> indica problema, implicazioni e situazione ideale; poi premi <em>Ottieni Raccomandazione</em>.</li>
+        <li><strong>Survey Finale:</strong> valuta urgenza, interesse, budget e tempistiche: vedrai lo stato lead.</li>
+      </ol>
+      <div class="onboarding-actions">
+        <label class="checkbox">
+          <input type="checkbox" id="dontShowAgain" /> Non mostrare più
+        </label>
+        <div class="spacer"></div>
+        <button id="onboardingPrev" class="btn-tertiary" type="button" aria-label="Passo precedente">Indietro</button>
+        <button id="onboardingNext" class="btn-primary" type="button" aria-label="Passo successivo">Avanti</button>
+        <button id="onboardingClose" class="btn-secondary" type="button" aria-label="Chiudi guida">Capito</button>
+      </div>
+      <div class="onboarding-dots" role="tablist" aria-label="Indicatori passaggi">
+        <button class="dot active" data-step="1" role="tab" aria-selected="true"></button>
+        <button class="dot" data-step="2" role="tab" aria-selected="false"></button>
+        <button class="dot" data-step="3" role="tab" aria-selected="false"></button>
+        <button class="dot" data-step="4" role="tab" aria-selected="false"></button>
+        <button class="dot" data-step="5" role="tab" aria-selected="false"></button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="sr-only" role="contentinfo">
+    <p>SpinMatch — Strumento di discovery, raccomandazione e chiusura trattative.</p>
+  </footer>
+
+  <script src="script.js" defer></script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./service-worker.js').catch(() => {});
+    }
+  </script>
+</body>
+</html>
